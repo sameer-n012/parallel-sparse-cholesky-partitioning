@@ -18,7 +18,23 @@ def set_env_threads(nthreads: int):
     os.environ["NUMEXPR_NUM_THREADS"] = str(nthreads)
 
 
-def run_one(mat_id: int, args: argparse.Namespace) -> list[dict]:
+def create_cache(results_dir: str):
+    """
+    Read in all results/results_*.json files and create a dict mapping
+    (matrix_id, nthreads, ordering) -> repeats
+    """
+    cache = {}
+    for f in Path(results_dir).glob("results_*.json"):
+        with f.open("r", encoding="utf-8") as jf:
+            data = json.load(jf)
+            for entry in data:
+                key = (entry["matrix_id"], entry["nthreads"], entry["ordering"])
+                if key not in cache or cache[key] < entry["repeats"]:
+                    cache[key] = entry["repeats"]
+    return cache
+
+
+def run_one(mat_id: int, args: argparse.Namespace, cache: dict) -> list[dict]:
     """
     Runs the benchmark for one matrix.
     """
@@ -32,11 +48,15 @@ def run_one(mat_id: int, args: argparse.Namespace) -> list[dict]:
     A = load_mat_csc(
         path,
         # make_laplacian=args.matrix_kind == "laplacian",
-        make_symmetric=True
+        make_symmetric=True,
     )
 
     out = []
     for o in args.orderings.split(","):
+        cached_val = cache.get((mat_id, args.nthreads, args.orderings))
+        if cached_val is not None and cached_val >= args.repeats:
+            continue
+
         if o.strip().lower() not in ("natural", "amd", "metis", "nesdis"):
             raise ValueError(f"Unknown ordering: {o.strip()}")
         res = run_bench(
@@ -69,16 +89,15 @@ def run(args: argparse.Namespace):
     out = Path(os.path.join(args.out_dir, f"results_{run_id}.json"))
     out.parent.mkdir(parents=True, exist_ok=True)
 
+    cache = create_cache(args.out_dir) if args.use_cache else {}
+
     mat_ids = find_matrices(
-        n=args.nmats,
-        kind=args.matrix_kind,
-        data_dir=args.data_dir,
-        spd=True
+        n=args.nmats, kind=args.matrix_kind, data_dir=args.data_dir, spd=True
     )
 
     results = []
     for mat_id in tqdm(mat_ids, desc="Running benchmarks", total=len(mat_ids)):
-        res = run_one(mat_id, args)
+        res = run_one(mat_id, args, cache)
         results.extend(res)
         with open(out, "w", encoding="utf-8") as f:
             f.write(json.dumps(results, indent=2, sort_keys=True) + "\n")
@@ -99,6 +118,7 @@ if __name__ == "__main__":
     ap.add_argument("--repeats", type=int, default=10)  # num runs per matrix
     ap.add_argument("--data-dir", default="data")
     ap.add_argument("--out-dir", default="results")
+    ap.add_argument("--use-cache", type=bool, default=True)
     ap.add_argument("--nmats", type=int, default=100)  # num matrices
     args = ap.parse_args()
 
