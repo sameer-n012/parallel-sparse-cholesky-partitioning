@@ -30,8 +30,9 @@ def run_one(mat_id: int, args: argparse.Namespace) -> dict:
 
     path = download_matrix(m, data_dir=args.data_dir)
     A = load_mat_csc(
-        path
+        path,
         # make_laplacian=args.matrix_kind == "laplacian",
+        make_symmetric=True
     )
     for o in args.orderings.split(","):
         if o.strip().lower() not in ("natural", "amd", "metis", "nesdis"):

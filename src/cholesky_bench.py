@@ -29,15 +29,45 @@ def run_cholesky_once(
     if diag_shift and diag_shift > 0:
         A_csc = (A_csc + diag_shift * sp.eye(A_csc.shape[0], format="csc")).tocsc()
 
+    A_csc = A_csc.tocsc()
+
+    A_csc = A_csc.astype(np.float64)      # force real double
+    A_csc.sum_duplicates()                # remove duplicates
+    A_csc.sort_indices()                 # canonical ordering
+    A_csc.eliminate_zeros()              # optional but helps
+
+    # print(A_csc.dtype)
+    # print(A_csc.indices.dtype, A_csc.indptr.dtype)
+    # print(np.isnan(A_csc.data).any(), np.isinf(A_csc.data).any())
+
+    # print(A_csc.dtype, A_csc.format)
+    # print(A_csc.has_sorted_indices)
+    # print(A_csc.nnz)
+
+    A_csc = sp.csc_matrix(A_csc, dtype=np.float64)
+
+    A_csc = A_csc.tocoo()
+
+    # Force clean numeric buffer
+    A_csc = sp.csc_matrix(
+        (A_csc.data.astype(np.float64),
+        (A_csc.row, A_csc.col)),
+        shape=A_csc.shape
+    )
+
+    A_csc.sum_duplicates()
+    A_csc.sort_indices()
+
     try:
         t0 = time.perf_counter()
         Fsym = analyze(A_csc, ordering_method=ordering)
         t1 = time.perf_counter()
-        F = Fsym.factorize(A_csc)
+        F = Fsym(A_csc)
         t2 = time.perf_counter()
 
-        L = F.L()
-        m = factor_metrics(A_csc=A_csc, L_csc=L)
+        # L = F.L()
+        # m = factor_metrics(A_csc=A_csc, L_csc=L)
+        m = {}
 
         return {
             "ordering": ordering,
@@ -69,7 +99,7 @@ def run_cholesky_retry(
     last = None
     for s in diag_shift_schedule:
         last = run_cholesky_once(A_csc, ordering=ordering, diag_shift=s)
-        if not last["error"] and not last["metrics"]:
+        if not last["error"] and last["metrics"]:
             last["metrics"]["diag_shift_used"] = float(s)
             return last
     return last

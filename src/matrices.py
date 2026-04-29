@@ -175,7 +175,12 @@ def load_mat_csc(path: str, make_symmetric: bool = False, make_laplacian: bool =
 
 
 def _to_symmetric(A):
-    return ((A + A.T) * 0.5).tocsc()
+    # return ((A + A.T) * 0.5).tocsc()
+    A = A.tocsc()
+    A = A + A.T
+    A.data *= 0.5
+    A.sum_duplicates()
+    return A
 
 
 def _to_laplacian(A, shift: float = 1e-3):
