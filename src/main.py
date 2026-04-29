@@ -73,6 +73,7 @@ def run(args: argparse.Namespace):
         n=args.nmats,
         kind=args.matrix_kind,
         data_dir=args.data_dir,
+        spd=True
     )
 
     results = []

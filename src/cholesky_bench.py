@@ -67,7 +67,6 @@ def run_cholesky_once(
 
         L = F.L()
         m = factor_metrics(A_csc=A_csc, L_csc=L)
-        m = {}
 
         return {
             "ordering": ordering,
