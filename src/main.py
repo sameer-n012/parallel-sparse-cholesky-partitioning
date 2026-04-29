@@ -7,8 +7,8 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from src.cholesky_bench import run_bench
-from src.matrices import download_matrix, find_matrices, get_matrix, load_mat_csc
+from cholesky_bench import run_bench
+from matrices import download_matrix, find_matrices, get_matrix, load_mat_csc
 
 
 def set_env_threads(nthreads: int):
@@ -24,6 +24,10 @@ def run_one(mat_id: int, args: argparse.Namespace) -> dict:
     """
 
     m = get_matrix(mat_id)
+    if len(m) < 1:
+        raise ValueError("Invalid matrix ID")
+    m = m[0]
+
     path = download_matrix(m, data_dir=args.data_dir)
     A = load_mat_csc(
         path
@@ -67,7 +71,7 @@ def run(args: argparse.Namespace):
         res = run_one(mat_id, args)
         results.append(res)
 
-    out = Path(os.path.join(args.out_dir, f"results_{time.time()}"))
+    out = Path(os.path.join(args.out_dir, f"results_{time.time()}.json"))
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(results, indent=2, sort_keys=True) + "\n")
 

@@ -7,7 +7,7 @@ import scipy.sparse as sp
 import scipy.stats as st
 from sksparse.cholmod import analyze
 
-from .metrics import factor_metrics
+from metrics import factor_metrics
 
 
 def _set_thread_env(nthreads: int):
@@ -93,7 +93,7 @@ def run_bench(
             "ordering": ordering,
             "nthreads": nthreads,
             "repeats": repeats,
-            "error": runs[-1].error,
+            "error": runs[-1]["error"],
         }
 
     times_an = np.array([r["time_analyze_s"] for r in ok_runs])

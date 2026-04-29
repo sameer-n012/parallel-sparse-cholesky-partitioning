@@ -26,7 +26,7 @@ def _ssget_search(
     d23: Optional[bool] = None,
     group: Optional[str] = None,
     kind: Optional[str] = None,
-)
+):
     # https://github.com/drdarshan/ssgetpy/blob/master/demo.ipynb
     if not rows:
         rows = (None, None)
@@ -232,18 +232,18 @@ def find_matrices(
 
     return [m.id for m in mats]
 
-    paths = []
-    for m in mats:
-        paths.append(_download_matrix(m, data_dir=data_dir))
+    # paths = []
+    # for m in mats:
+    #     paths.append(_download_matrix(m, data_dir=data_dir))
 
-    return paths
+    # return paths
 
-    A = load_mat_as_csc(download_matrix_mat(name=ref.name, data_dir=data_dir))
-    if kind in ("spd_suitesparse", "symmetric_suitesparse", "curated_spd"):
-        A = symmetrize_pattern(A)
-        return A
-    elif kind == "laplacian":
-        A = to_laplacian(A)
-        return A
-    else:
-        raise ValueError(f"Unknown kind: {kind}")
+    # A = load_mat_as_csc(download_matrix_mat(name=ref.name, data_dir=data_dir))
+    # if kind in ("spd_suitesparse", "symmetric_suitesparse", "curated_spd"):
+    #     A = symmetrize_pattern(A)
+    #     return A
+    # elif kind == "laplacian":
+    #     A = to_laplacian(A)
+    #     return A
+    # else:
+    #     raise ValueError(f"Unknown kind: {kind}")
