@@ -26,25 +26,28 @@ def run_one(mat_id: int, args: argparse.Namespace) -> dict:
     m = get_matrix(mat_id)
     path = download_matrix(m, data_dir=args.data_dir)
     A = load_mat_csc(
-        path,
-        make_laplacian=args.matrix_kind == "laplacian",
+        path
+        # make_laplacian=args.matrix_kind == "laplacian",
     )
-    res = run_bench(
-        A, ordering=args.ordering, nthreads=args.nthreads, repeats=args.repeats
-    )
-    res["matrix_id"] = m.id
-    res["matrix_name"] = m.name
-    res["group"] = m.group
-    res["matrix_kind"] = m.kind
-    res["pattern_sym"] = m.psym
-    res["numeric_sym"] = m.nsym
-    res["nrows"] = m.rows
-    res["ncols"] = m.cols
-    res["nnz"] = m.nnz
-    res["dtype"] = m.dtype
-    res["2d3d"] = m.is2d3d
-    res["spd"] = m.isspd
-    return res
+    for o in args.orderings.split(","):
+        if o.strip().lower() not in ("natural", "amd", "metis", "nesdis"):
+            raise ValueError(f"Unknown ordering: {o.strip()}")
+        res = run_bench(
+            A, ordering=o.strip().lower(), nthreads=args.nthreads, repeats=args.repeats
+        )
+        res["matrix_id"] = m.id
+        res["matrix_name"] = m.name
+        res["group"] = m.group
+        res["matrix_kind"] = m.kind
+        res["pattern_sym"] = m.psym
+        res["numeric_sym"] = m.nsym
+        res["nrows"] = m.rows
+        res["ncols"] = m.cols
+        res["nnz"] = m.nnz
+        res["dtype"] = m.dtype
+        res["2d3d"] = m.is2d3d
+        res["spd"] = m.isspd
+        return res
 
 
 def run(args: argparse.Namespace):
@@ -79,10 +82,7 @@ if __name__ == "__main__":
         "--matrix-kind",
         required=True,
     )
-    ap.add_argument("--matrix-name", required=True)
-    ap.add_argument(
-        "--ordering", required=True, choices=["natural", "amd", "metis", "nesdis"]
-    )
+    ap.add_argument("--orderings", required=True)
     ap.add_argument("--nthreads", type=int, default=1)
     ap.add_argument("--repeats", type=int, default=10)  # num runs per matrix
     ap.add_argument("--data-dir", default="data")
