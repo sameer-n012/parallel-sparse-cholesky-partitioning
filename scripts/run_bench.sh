@@ -3,4 +3,4 @@ python src/main.py \
   --orderings natural,amd,metis,nesdis \
   --nthreads 1 \
   --repeats 10 \
-  --nmats 10
+  --nmats 100

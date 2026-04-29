@@ -18,7 +18,7 @@ def set_env_threads(nthreads: int):
     os.environ["NUMEXPR_NUM_THREADS"] = str(nthreads)
 
 
-def run_one(mat_id: int, args: argparse.Namespace) -> dict:
+def run_one(mat_id: int, args: argparse.Namespace) -> list[dict]:
     """
     Runs the benchmark for one matrix.
     """
@@ -34,6 +34,8 @@ def run_one(mat_id: int, args: argparse.Namespace) -> dict:
         # make_laplacian=args.matrix_kind == "laplacian",
         make_symmetric=True
     )
+
+    out = []
     for o in args.orderings.split(","):
         if o.strip().lower() not in ("natural", "amd", "metis", "nesdis"):
             raise ValueError(f"Unknown ordering: {o.strip()}")
@@ -52,7 +54,9 @@ def run_one(mat_id: int, args: argparse.Namespace) -> dict:
         res["dtype"] = m.dtype
         res["2d3d"] = m.is2d3d
         res["spd"] = m.isspd
-        return res
+        out.append(res)
+
+    return out
 
 
 def run(args: argparse.Namespace):
@@ -60,6 +64,10 @@ def run(args: argparse.Namespace):
     Runs the benchmark
     """
     set_env_threads(args.nthreads)
+
+    run_id = time.time()
+    out = Path(os.path.join(args.out_dir, f"results_{run_id}.json"))
+    out.parent.mkdir(parents=True, exist_ok=True)
 
     mat_ids = find_matrices(
         n=args.nmats,
@@ -70,11 +78,9 @@ def run(args: argparse.Namespace):
     results = []
     for mat_id in tqdm(mat_ids, desc="Running benchmarks", total=len(mat_ids)):
         res = run_one(mat_id, args)
-        results.append(res)
-
-    out = Path(os.path.join(args.out_dir, f"results_{time.time()}.json"))
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(results, indent=2, sort_keys=True) + "\n")
+        results.extend(res)
+        with open(out, "w", encoding="utf-8") as f:
+            f.write(json.dumps(results, indent=2, sort_keys=True) + "\n")
 
 
 if __name__ == "__main__":

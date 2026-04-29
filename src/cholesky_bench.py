@@ -62,11 +62,11 @@ def run_cholesky_once(
         t0 = time.perf_counter()
         Fsym = analyze(A_csc, ordering_method=ordering)
         t1 = time.perf_counter()
-        F = Fsym(A_csc)
+        F = Fsym.cholesky(A_csc)
         t2 = time.perf_counter()
 
-        # L = F.L()
-        # m = factor_metrics(A_csc=A_csc, L_csc=L)
+        L = F.L()
+        m = factor_metrics(A_csc=A_csc, L_csc=L)
         m = {}
 
         return {
