@@ -5,6 +5,8 @@ import sys
 import time
 from pathlib import Path
 
+from tqdm import tqdm
+
 from src.cholesky_bench import run_bench
 from src.matrices import download_matrix, find_matrices, get_matrix, load_mat_csc
 
@@ -58,7 +60,7 @@ def run(args: argparse.Namespace):
     )
 
     results = []
-    for mat_id in mat_ids:
+    for mat_id in tqdm(mat_ids, desc="Running benchmarks", total=len(mat_ids)):
         res = run_one(mat_id, args)
         results.append(res)
 
