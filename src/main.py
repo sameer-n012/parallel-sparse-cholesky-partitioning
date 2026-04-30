@@ -43,19 +43,24 @@ def run_one(mat_id: int, args: argparse.Namespace, cache: dict) -> list[dict]:
     if len(m) < 1:
         raise ValueError("Invalid matrix ID")
     m = m[0]
+    A = None
 
-    path = download_matrix(m, data_dir=args.data_dir)
-    A = load_mat_csc(
-        path,
-        # make_laplacian=args.matrix_kind == "laplacian",
-        make_symmetric=True,
-    )
+    def load_matrix(to_load):
+        path = download_matrix(to_load, data_dir=args.data_dir)
+        return load_mat_csc(
+            path,
+            # make_laplacian=args.matrix_kind == "laplacian",
+            make_symmetric=True,
+        )
 
     out = []
     for o in args.orderings.split(","):
-        cached_val = cache.get((mat_id, args.nthreads, args.orderings))
+        cached_val = cache.get((mat_id, args.nthreads, o))
         if cached_val is not None and cached_val >= args.repeats:
             continue
+
+        if A is None:
+            A = load_matrix(m)
 
         if o.strip().lower() not in ("natural", "amd", "metis", "nesdis"):
             raise ValueError(f"Unknown ordering: {o.strip()}")
@@ -92,11 +97,19 @@ def run(args: argparse.Namespace):
     cache = create_cache(args.out_dir) if args.use_cache else {}
 
     mat_ids = find_matrices(
-        n=args.nmats, kind=args.matrix_kind, data_dir=args.data_dir, spd=True
+        n=args.nmats, kind=args.matrix_kind, data_dir=args.data_dir, 
+        spd=True,
+        rows=(args.min_size, args.max_size), cols=(args.min_size, args.max_size),
+        nnzs=(args.min_nnz, args.max_nnz)
     )
 
     results = []
-    for mat_id in tqdm(mat_ids, desc="Running benchmarks", total=len(mat_ids)):
+    pbar = tqdm(mat_ids, desc="Running benchmarks", total=len(mat_ids))
+    for mat_id in pbar:
+        if mat_id == 924 or mat_id == 1310 or mat_id == 1402 or mat_id == 2212 or mat_id == 2213 or mat_id == 2901 or mat_id == 2904:
+            continue
+
+        pbar.set_postfix({"matrix_id": mat_id})
         res = run_one(mat_id, args, cache)
         results.extend(res)
         with open(out, "w", encoding="utf-8") as f:
@@ -110,8 +123,7 @@ if __name__ == "__main__":
 
     ap = argparse.ArgumentParser()
     ap.add_argument(
-        "--matrix-kind",
-        required=True,
+        "--matrix-kind"
     )
     ap.add_argument("--orderings", required=True)
     ap.add_argument("--nthreads", type=int, default=1)
@@ -119,6 +131,10 @@ if __name__ == "__main__":
     ap.add_argument("--data-dir", default="data")
     ap.add_argument("--out-dir", default="results")
     ap.add_argument("--use-cache", type=bool, default=True)
+    ap.add_argument("--max-size", type=int)
+    ap.add_argument("--min-size", type=int)
+    ap.add_argument("--max-nnz", type=int)
+    ap.add_argument("--min-nnz", type=int)
     ap.add_argument("--nmats", type=int, default=100)  # num matrices
     args = ap.parse_args()
 

@@ -174,6 +174,41 @@ def load_mat_csc(path: str, make_symmetric: bool = False, make_laplacian: bool =
     return A
 
 
+def save_mat_csc(mat, path: str):
+    """
+    Save .mat file to path
+    """
+
+    mdict = {
+        "Problem": {
+            "A": [[mat]]
+        }
+    }
+
+    sio.savemat(path, mdict)
+
+
+def rand_sparse_csc(
+    n: int,
+    density: float,
+    symmetric: bool = False,
+    spd: bool = False,
+    seed: Optional[int] = None,
+) -> sp.csc_matrix:
+    """
+    Generate a random sparse matrix in CSC format.
+    """
+    rng = np.random.default_rng(seed)
+    A = sp.random(n, n, density=density, format="csc", random_state=rng)
+
+    if spd:
+        A = A.T @ A + 1e-3 * sp.eye(n, format="csc")
+    elif symmetric:
+        A = _to_symmetric(A)
+
+    return A.tocsc()    
+
+
 def _to_symmetric(A):
     # return ((A + A.T) * 0.5).tocsc()
     A = A.tocsc()
